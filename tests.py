@@ -32,11 +32,11 @@ def mnst():
     x_test, y_test = unison_shuffled_copies(x_test, y_test)
 
 
-def main(**kwargs):
-    if kwargs["read_from_file"]:
-        with open(kwargs["read_file"], "r") as file:
+def main(*, train, test, read_from_file, read_file, read_from, write_to_file, write_file, write_to):
+    if read_from_file:
+        with open(read_file, "r") as file:
             data = json.load(file)
-            data_net = data[kwargs["read_from"]]
+            data_net = data[read_from]
             layers = []
             for weights, biases in data_net:
                 layers.append(Layer(len(weights), len(weights[0]), weights=np.array(weights), biases=np.array(biases)))
@@ -44,24 +44,24 @@ def main(**kwargs):
         sizes = [(784, 50), (50, 20), (20, 10)]
         layers = [Layer(*x) for x in sizes]
     net = Network(layers)
-    if kwargs["train"]:
+    if train:
         net.fit(x_train=x_train[0:1000], y_train=y_train[0:1000], epochs=1000, learning_rate=0.3, draw_map=True)
-        if kwargs["write_to_file"]:
-            with open(kwargs["write_file"], "r+") as jsf:
+        if write_to_file:
+            with open(write_file, "r+") as jsf:
                 data = dict()
-                data[kwargs["save_to"]] = net.get_data()
+                data[write_to] = net.get_data()
                 jsf.seek(0)
                 json.dump(data, jsf, ensure_ascii=False)
                 jsf.truncate()
-    if kwargs["test"]:
+    if test:
         net.predict(x_test[:1000], y_test[:1000])
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  
     params = {
         "read_from_file": True,
         "write_to_file": True,
-        "save_to": "1",
+        "write_to": "1",
         "read_from": "1",
         "read_file": "data1.json",
         "write_file": "data1.json",

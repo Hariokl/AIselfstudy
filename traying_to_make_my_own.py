@@ -4,7 +4,7 @@ from funcs import *
 from matplotlib import pyplot as plt
 
 
-class Network:
+class Network:  # TODO: need to try to add batch-normalisation
     def __init__(self, layers, loss=mse, prime_loss=prime_mse):
         self.layers = layers
         self.loss = loss
@@ -48,22 +48,22 @@ class Network:
                 last_err = err
         print("\nError:", err)
 
-    def predict(self, x_test, y_test):
+    def predict(self, x_test, y_test, method=the_surest):  # TODO: need to add the ability to look into what number failed to guess (like, to an actual image)
         err = 0
         count = 0
         for i in range(len(x_test)):
             sample = x_test[i]
             output = self.forward_prop(sample)[0]
             err += self.loss(output, y_test[i])
-            count += self.index_of_max(output) == self.index_of_max(y_test[i])
-            if i % 1 == 0:
+            count += method(output, y_test[i])  # method can be changed from the_surest to rounding. For more details, see in funcs.py
+            if (i + 1) % 10 == 0:
                 print(f"\rSamples: {(i+1)}/{len(x_test)}, Error: {err / (i+1)}, Count: {count}/{i+1}", end="")
 
     def index_of_max(self, array):
         return np.argpartition(array, -1)[-1]
 
 
-class Layer:
+class Layer:  # TODO: maybe it'd be better to change to dataclass
     __slots__ = ("input_size", "output_size", "weights", "biases", "input", "output", "activation", "derivative")
 
     def __init__(self, input_size, output_size, activation=sigmoid, derivative=der_sigmoid, weights=None, biases=None):
