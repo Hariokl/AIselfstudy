@@ -1,17 +1,25 @@
+from dataclasses import dataclass
+from typing import Callable
+
 import numpy as np
-import numba as nb
 from funcs import *
-from matplotlib import pyplot as plt
+# from matplotlib import pyplot as plt
 
 
 class Network:  # TODO: need to try to add batch-normalisation
-    def __init__(self, layers, loss=mse, prime_loss=prime_mse):
-        self.layers = layers
+    def __init__(self, loss=mse, prime_loss=prime_mse):
         self.loss = loss
         self.prime_loss = prime_loss
+        self.layers = list()
+
+    def add(self, layer):
+        self.layers.append(layer)
 
     def get_data(self):
-        return [layer.get_data() for layer in self.layers]
+        return [self.convert_data(layer) for layer in self.layers]
+
+    def convert_data(self, layer):
+        return np.round(layer.weights, 15).tolist(), np.round(layer.biases, 15).tolist()
 
     def forward_prop(self, sample):
         output = sample
@@ -31,7 +39,7 @@ class Network:  # TODO: need to try to add batch-normalisation
     def fit(self, x_train, y_train, epochs, learning_rate, draw_map=True):
         for epoch in range(epochs):
             print(f"\rEpoch: {epoch+1}/{epochs}", end="")
-            err = 0
+            # err = 0
             for i in range(len(x_train)):
                 output = self.forward_prop(x_train[i])  # forward propagation
 
@@ -39,14 +47,14 @@ class Network:  # TODO: need to try to add batch-normalisation
 
                 self.backward_prop(error, learning_rate)  # backward propagation
 
-                err += self.loss(output, y_train[i])
-            err /= len(x_train)
-            if draw_map and epoch != 0:
-                plt.plot((epoch - 1, epoch), (last_err, err), color="blue")
-                plt.pause(0.05)
-            if draw_map:
-                last_err = err
-        print("\nError:", err)
+                # err += self.loss(output, y_train[i])
+            # err /= len(x_train)
+            # if draw_map and epoch != 0:
+            #     plt.plot((epoch - 1, epoch), (last_err, err), color="blue")
+            #     plt.pause(0.05)
+            # if draw_map:
+            #     last_err = err
+        # print("\nError:", err)
 
     def predict(self, x_test, y_test, method=the_surest):  # TODO: need to add the ability to look into what number failed to guess (like, to an actual image)
         err = 0
@@ -59,32 +67,23 @@ class Network:  # TODO: need to try to add batch-normalisation
             if (i + 1) % 10 == 0:
                 print(f"\rSamples: {(i+1)}/{len(x_test)}, Error: {err / (i+1)}, Count: {count}/{i+1}", end="")
 
-    def index_of_max(self, array):
-        return np.argpartition(array, -1)[-1]
+
+@dataclass
+class Layer:
+    input_size: int
+    output_size: int
+    weights: np.ndarray
+    biases: np.ndarray
+    input: np.ndarray = None
+    output: np.ndarray = None
+    activation: Callable = sigmoid
+    derivative: Callable = der_sigmoid
 
 
-class Layer:  # TODO: maybe it'd be better to change to dataclass
-    __slots__ = ("input_size", "output_size", "weights", "biases", "input", "output", "activation", "derivative")
+def init_weights(input_size, output_size):
+    return np.random.rand(input_size, output_size) - 0.5
 
-    def __init__(self, input_size, output_size, activation=sigmoid, derivative=der_sigmoid, weights=None, biases=None):
-        self.input_size = input_size
-        self.output_size = output_size
-        self.input = None
-        self.output = None
-        self.activation = activation
-        self.derivative = derivative
-        self.init_weights(weights)
-        self.init_biases(biases)
 
-    def init_weights(self, weights=None):
-        self.weights = weights
-        if weights is None:
-            self.weights = np.random.rand(self.input_size, self.output_size) - 0.5
+def init_biases(output_size):
+    return np.random.rand(1, output_size) - 0.5
 
-    def init_biases(self, biases=None):
-        self.biases = biases
-        if biases is None:
-            self.biases = np.random.rand(1, self.output_size) - 0.5
-
-    def get_data(self):
-        return np.round(self.weights, 15).tolist(), np.round(self.biases, 15).tolist()
